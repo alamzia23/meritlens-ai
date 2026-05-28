@@ -3,7 +3,8 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { URL } = require("node:url");
 
-const root = __dirname;
+const root = path.join(__dirname, "public");
+const dataRoot = __dirname;
 const port = Number(process.env.PORT || 5173);
 const allowedFiles = new Set(["/", "/index.html", "/styles.css", "/app.js", "/meritlens-demo.png"]);
 
@@ -137,7 +138,7 @@ function cryptoRandomId() {
 }
 
 async function loadEmployees() {
-  const file = await fs.readFile(path.join(root, "data", "employees.json"), "utf8");
+  const file = await fs.readFile(path.join(dataRoot, "data", "employees.json"), "utf8");
   return JSON.parse(file);
 }
 
