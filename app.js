@@ -257,6 +257,57 @@ function renderWorkflow(activeIndex = -1) {
   });
 }
 
+function initStarfield() {
+  const canvas = $("#starfield");
+  if (!canvas) return;
+
+  const context = canvas.getContext("2d");
+  const stars = [];
+  let width = 0;
+  let height = 0;
+
+  function resize() {
+    const pixelRatio = 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * pixelRatio);
+    canvas.height = Math.floor(height * pixelRatio);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+    stars.length = 0;
+    const count = Math.min(180, Math.floor((width * height) / 7800));
+    for (let index = 0; index < count; index += 1) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.35 + 0.25,
+        alpha: Math.random() * 0.62 + 0.22
+      });
+    }
+
+    draw();
+  }
+
+  function draw() {
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = "rgba(255, 255, 255, 0.9)";
+
+    stars.forEach((star) => {
+      context.globalAlpha = star.alpha;
+      context.beginPath();
+      context.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+      context.fill();
+    });
+
+    context.globalAlpha = 1;
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+}
+
 async function runAnalysis() {
   const employee = selectedEmployee();
   $("#runBtn").disabled = true;
@@ -300,6 +351,7 @@ function render() {
   renderAudit();
 }
 
+initStarfield();
 bindEvents();
 addAudit("Loaded secure local demo dataset.");
 render();
