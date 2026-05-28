@@ -22,10 +22,20 @@ MeritLens is a hackathon-ready MVP for enterprise employee performance analysis.
 ## Local run
 
 ```bash
-python3 -m http.server 4173
+npm start
 ```
 
-Then open `http://localhost:4173`.
+Then open `http://localhost:5173`.
+
+For a quick static-only demo, `python3 -m http.server 5173` still works, but the full MVP uses `npm start` so the frontend can call the backend agent API.
+
+## Backend API
+
+- `GET /api/health` checks the local service.
+- `GET /api/employees` returns review-safe employee summaries.
+- `GET /api/analyze/:employeeId` runs the synthetic enterprise performance agent pipeline.
+
+The backend uses local synthetic data in `data/employees.json` and does not require external API keys. This keeps the hackathon demo reliable while still showing a real agentic workflow.
 
 ## What this MVP proves
 

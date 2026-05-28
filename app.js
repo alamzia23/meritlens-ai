@@ -97,7 +97,9 @@ const employees = [
 const state = {
   selectedId: employees[0].id,
   activeTab: "evidence",
-  audit: []
+  audit: [],
+  analyses: {},
+  backendAvailable: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -135,6 +137,101 @@ function maskName(text, employee) {
   return text.replaceAll(employee.name.split(" ")[0], "[employee]");
 }
 
+function localAnalysis(employee) {
+  const score = performanceScore(employee);
+  const readiness = readinessScore(employee);
+  const injection = hasPromptInjection(employee);
+  const level = score >= 85 ? "exceeds expectations" : score >= 72 ? "meets expectations" : "needs focused support";
+
+  return {
+    source: "local",
+    employeeId: employee.id,
+    score,
+    readiness,
+    promptInjection: injection,
+    evidence: [
+      ...employee.highlights.map((item) => ({
+        type: "good",
+        title: "Verified positive signal",
+        detail: maskName(item, employee)
+      })),
+      ...employee.concerns.map((item) => ({
+        type: employee.risk > 50 ? "bad" : "warn",
+        title: "Review attention needed",
+        detail: maskName(item, employee)
+      })),
+      {
+        type: "good",
+        title: "Source policy",
+        detail: "Every generated claim is tied to goals, outcomes, peer notes, or manager-entered evidence."
+      }
+    ],
+    coaching: [
+      {
+        type: readiness > 80 ? "good" : "warn",
+        title: "Next-quarter goal",
+        detail: readiness > 80 ? "Assign a broader cross-team ownership goal with measurable adoption criteria." : "Create a narrower 30-60-90 day plan with weekly manager check-ins."
+      },
+      {
+        type: employee.risk > 50 ? "warn" : "good",
+        title: "Manager coaching prompt",
+        detail: employee.risk > 50 ? "Ask what work should be removed before adding new goals. Look for systemic blockers, not only individual performance gaps." : "Use specific examples from verified evidence and avoid personality-based language."
+      },
+      {
+        type: "good",
+        title: "Retention signal",
+        detail: employee.growth > 82 ? "High growth momentum. Discuss scope expansion and skill-building path." : "Growth momentum is moderate. Pair feedback with concrete enablement."
+      }
+    ],
+    security: [
+      {
+        type: injection ? "bad" : "good",
+        title: "Prompt-injection scan",
+        detail: injection ? "Self-review contains instruction-like text. The Security Agent quarantines it and excludes it from scoring." : "No instruction override patterns found in employee-entered text."
+      },
+      {
+        type: "good",
+        title: "PII minimization",
+        detail: "Demo masks employee first names in evidence snippets and avoids salary, medical, age, gender, or protected-class data."
+      },
+      {
+        type: "good",
+        title: "Access control",
+        detail: "HR admin, manager, and reviewer roles are represented as separate approval responsibilities."
+      },
+      {
+        type: "good",
+        title: "Auditability",
+        detail: "Every profile view and agent run is logged with timestamped events."
+      }
+    ],
+    fairness: [
+      {
+        type: "good",
+        title: "Fairness guardrail",
+        detail: "Local fallback avoids protected-class attributes and keeps the manager in the decision loop."
+      }
+    ],
+    reviewDraft: `Overall calibration: ${level}.\n\n${employee.name} delivered measurable business value with a performance index of ${score}. The strongest evidence is ${employee.highlights[0].toLowerCase()} The next review conversation should focus on ${employee.concerns[0].toLowerCase()}\n\nRecommended manager action: approve the evidence set, edit tone for company culture, then share a growth plan. MeritLens does not finalize compensation or termination decisions without human approval.`
+  };
+}
+
+function currentAnalysis(employee) {
+  return state.analyses[employee.id] || localAnalysis(employee);
+}
+
+async function fetchBackendAnalysis(employee) {
+  const response = await fetch(`/api/analyze/${encodeURIComponent(employee.id)}`, {
+    headers: { Accept: "application/json" }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend analysis failed with ${response.status}`);
+  }
+
+  return response.json();
+}
+
 function addAudit(message) {
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   state.audit.unshift(`${now} · ${message}`);
@@ -170,9 +267,10 @@ function renderEmployees() {
 
 function renderProfile() {
   const employee = selectedEmployee();
-  const score = performanceScore(employee);
-  const readiness = readinessScore(employee);
-  const injection = hasPromptInjection(employee);
+  const analysis = currentAnalysis(employee);
+  const score = analysis.score;
+  const readiness = analysis.readiness;
+  const injection = analysis.promptInjection;
 
   $("#employeeName").textContent = employee.name;
   $("#employeeRole").textContent = employee.role;
@@ -193,9 +291,7 @@ function finding(type, title, detail) {
 
 function renderTab() {
   const employee = selectedEmployee();
-  const score = performanceScore(employee);
-  const readiness = readinessScore(employee);
-  const injection = hasPromptInjection(employee);
+  const analysis = currentAnalysis(employee);
   const content = $("#tabContent");
 
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -205,30 +301,23 @@ function renderTab() {
   if (state.activeTab === "evidence") {
     content.innerHTML = `
       <div class="evidence-list">
-        ${employee.highlights.map((item) => finding("good", "Verified positive signal", maskName(item, employee))).join("")}
-        ${employee.concerns.map((item) => finding(employee.risk > 50 ? "bad" : "warn", "Review attention needed", maskName(item, employee))).join("")}
-        ${finding("good", "Source policy", "Every generated claim is tied to goals, outcomes, peer notes, or manager-entered evidence.")}
+        ${finding(analysis.source === "backend" ? "good" : "warn", "Analysis source", analysis.source === "backend" ? "Live backend agent pipeline generated this result." : "Local fallback result. Start the Node backend for full agent mode.")}
+        ${analysis.evidence.map((item) => finding(item.type, item.title, item.detail)).join("")}
       </div>
     `;
   }
 
   if (state.activeTab === "draft") {
-    const level = score >= 85 ? "exceeds expectations" : score >= 72 ? "meets expectations" : "needs focused support";
     content.innerHTML = `
-      <div class="draft-box">Overall calibration: ${escapeHtml(level)}.
-
-${escapeHtml(employee.name)} delivered measurable business value with a performance index of ${score}. The strongest evidence is ${escapeHtml(employee.highlights[0].toLowerCase())} The next review conversation should focus on ${escapeHtml(employee.concerns[0].toLowerCase())}
-
-Recommended manager action: approve the evidence set, edit tone for company culture, then share a growth plan. MeritLens does not finalize compensation or termination decisions without human approval.</div>
+      <div class="draft-box">${escapeHtml(analysis.reviewDraft)}</div>
     `;
   }
 
   if (state.activeTab === "coaching") {
     content.innerHTML = `
       <div class="evidence-list">
-        ${finding("good", "Next-quarter goal", readiness > 80 ? "Assign a broader cross-team ownership goal with measurable adoption criteria." : "Create a narrower 30-60-90 day plan with weekly manager check-ins.")}
-        ${finding("warn", "Manager coaching prompt", employee.risk > 50 ? "Ask what work should be removed before adding new goals. Look for systemic blockers, not only individual performance gaps." : "Use specific examples from verified evidence and avoid personality-based language.")}
-        ${finding("good", "Retention signal", employee.growth > 82 ? "High growth momentum. Discuss scope expansion and skill-building path." : "Growth momentum is moderate. Pair feedback with concrete enablement.")}
+        ${analysis.coaching.map((item) => finding(item.type, item.title, item.detail)).join("")}
+        ${(analysis.fairness || []).map((item) => finding(item.type, item.title, item.detail)).join("")}
       </div>
     `;
   }
@@ -236,10 +325,7 @@ Recommended manager action: approve the evidence set, edit tone for company cult
   if (state.activeTab === "security") {
     content.innerHTML = `
       <div class="risk-list">
-        ${finding(injection ? "bad" : "good", "Prompt-injection scan", injection ? "Self-review contains instruction-like text. The Security Agent quarantines it and excludes it from scoring." : "No instruction override patterns found in employee-entered text.")}
-        ${finding("good", "PII minimization", "Demo masks employee first names in evidence snippets and avoids salary, medical, age, gender, or protected-class data.")}
-        ${finding("good", "Access control", "HR admin, manager, and reviewer roles are represented as separate approval responsibilities.")}
-        ${finding("good", "Auditability", "Every profile view and agent run is logged with timestamped events.")}
+        ${analysis.security.map((item) => finding(item.type, item.title, item.detail)).join("")}
       </div>
     `;
   }
@@ -319,8 +405,18 @@ async function runAnalysis() {
   }
 
   renderWorkflow(5);
-  state.activeTab = hasPromptInjection(employee) ? "security" : "draft";
-  addAudit(`Completed analysis with ${hasPromptInjection(employee) ? "security quarantine" : "manager-ready draft"}.`);
+  try {
+    state.analyses[employee.id] = await fetchBackendAnalysis(employee);
+    state.backendAvailable = true;
+    addAudit(`Backend agents analyzed synthetic enterprise signals for ${employee.name}.`);
+  } catch (error) {
+    state.analyses[employee.id] = localAnalysis(employee);
+    state.backendAvailable = false;
+    addAudit("Backend unavailable; local fallback analysis used.");
+  }
+
+  state.activeTab = state.analyses[employee.id].promptInjection ? "security" : "draft";
+  addAudit(`Completed analysis with ${state.analyses[employee.id].promptInjection ? "security quarantine" : "manager-ready draft"}.`);
   $("#runBtn").disabled = false;
   render();
 }

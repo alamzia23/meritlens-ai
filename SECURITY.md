@@ -4,12 +4,14 @@ This MVP is intentionally local and dependency-light for hackathon speed. The de
 
 ## Implemented in the MVP
 
-- No external network calls.
-- No package dependencies or build pipeline.
+- Localhost-only backend server.
+- No external network calls or package dependencies.
+- No dependency install or build pipeline required.
 - Prompt-injection scan for employee-entered text.
 - PII minimization in generated evidence snippets.
 - Audit log for profile views and analysis runs.
 - Human approval language in the review flow.
+- Content Security Policy, `X-Frame-Options`, and `X-Content-Type-Options` headers from the local Node server.
 
 ## Production requirements
 

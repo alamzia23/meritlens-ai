@@ -1,0 +1,18 @@
+{
+  "name": "meritlens-ai",
+  "version": "1.0.0",
+  "description": "Agentic enterprise employee performance analysis MVP.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check app.js"
+  },
+  "keywords": [
+    "ai",
+    "performance-review",
+    "agentic-workflow",
+    "hackathon"
+  ],
+  "author": "Alam Zia",
+  "license": "MIT"
+}
