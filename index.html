@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <canvas id="starfield" aria-hidden="true"></canvas>
     <main class="shell">
       <aside class="sidebar" aria-label="Workspace navigation">
         <div class="brand">
@@ -19,10 +18,10 @@
         </div>
 
         <nav class="nav">
-          <button class="nav-item active" type="button">Command Center</button>
-          <button class="nav-item" type="button">Agent Runs</button>
-          <button class="nav-item" type="button">Governance</button>
-          <button class="nav-item" type="button">Presentation</button>
+          <button class="nav-item active" data-page="command-center" type="button">Command Center</button>
+          <button class="nav-item" data-page="agent-runs" type="button">Agent Runs</button>
+          <button class="nav-item" data-page="governance" type="button">Governance</button>
+          <button class="nav-item" data-page="presentation" type="button">Presentation</button>
         </nav>
 
         <section class="side-panel">
@@ -35,6 +34,7 @@
       </aside>
 
       <section class="workspace">
+        <div id="cmdPage">
         <header class="topbar">
           <div>
             <span class="eyebrow">Enterprise HR Copilot</span>
@@ -170,6 +170,8 @@
             <div class="audit-log" id="auditLog" aria-label="Audit log"></div>
           </div>
         </section>
+        </div>
+        <div id="dynPage" hidden></div>
       </section>
     </main>
 

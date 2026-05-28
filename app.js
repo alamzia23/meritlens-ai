@@ -99,7 +99,8 @@ const state = {
   activeTab: "evidence",
   audit: [],
   analyses: {},
-  backendAvailable: false
+  backendAvailable: false,
+  page: "command-center"
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -421,7 +422,238 @@ async function runAnalysis() {
   render();
 }
 
+function showPage(page) {
+  state.page = page;
+  const cmdPage = document.getElementById("cmdPage");
+  const dynPage = document.getElementById("dynPage");
+  document.querySelectorAll(".nav-item[data-page]").forEach((item) => {
+    item.classList.toggle("active", item.dataset.page === page);
+  });
+  if (page === "command-center") {
+    cmdPage.hidden = false;
+    dynPage.hidden = true;
+    render();
+  } else {
+    cmdPage.hidden = true;
+    dynPage.hidden = false;
+    if (page === "agent-runs") renderAgentRunsPage();
+    else if (page === "governance") renderGovernancePage();
+    else if (page === "presentation") renderPresentationPage();
+  }
+}
+
+function renderAgentRunsPage() {
+  const dynPage = document.getElementById("dynPage");
+  const runs = Object.values(state.analyses);
+
+  if (runs.length === 0) {
+    dynPage.innerHTML = `
+      <div class="dyn-page">
+        <header class="dyn-topbar">
+          <span class="eyebrow">Pipeline History</span>
+          <h1>Agent Runs</h1>
+          <p>Every analysis run is recorded here with full agent trace and findings.</p>
+        </header>
+        <div class="empty-state">
+          <div class="empty-icon">▷</div>
+          <strong>No runs yet</strong>
+          <p>Go to Command Center, select an employee, and click Run Agent Analysis.</p>
+          <button class="primary-button" onclick="showPage('command-center')">Go to Command Center</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const agentNames = ["Ingestion", "Evidence", "Fairness", "Security", "Review"];
+
+  const runCards = runs.map((run) => {
+    const emp = employees.find((e) => e.id === run.employeeId);
+    const time = run.generatedAt
+      ? new Date(run.generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      : "this session";
+    return `
+      <article class="run-card">
+        <div class="run-header">
+          <div class="run-identity">
+            <strong>${escapeHtml(emp ? emp.name : run.employeeId)}</strong>
+            <span>${escapeHtml(emp ? `${emp.role} · ${emp.department}` : "")}</span>
+          </div>
+          <div class="run-badges">
+            <span class="run-badge ${run.source === "backend" ? "backend" : "local"}">${run.source === "backend" ? "live backend" : "local fallback"}</span>
+            <span class="run-badge ${run.promptInjection ? "danger" : "safe"}">${run.promptInjection ? "injection detected" : "clean"}</span>
+          </div>
+        </div>
+        <div class="run-scores">
+          <div class="run-score-item"><span>Performance</span><strong>${run.score}</strong></div>
+          <div class="run-score-item"><span>Readiness</span><strong>${run.readiness}%</strong></div>
+          <div class="run-score-item"><span>Agents</span><strong>5 / 5</strong></div>
+          <div class="run-score-item"><span>Completed</span><strong>${escapeHtml(time)}</strong></div>
+        </div>
+        <div class="run-agents">
+          ${agentNames.map((name) => `<span class="agent-chip">${escapeHtml(name)}</span>`).join("")}
+        </div>
+      </article>`;
+  }).join("");
+
+  dynPage.innerHTML = `
+    <div class="dyn-page">
+      <header class="dyn-topbar">
+        <span class="eyebrow">Pipeline History</span>
+        <h1>Agent Runs</h1>
+        <p>${runs.length} analysis run${runs.length !== 1 ? "s" : ""} completed this session.</p>
+      </header>
+      <div class="run-list">${runCards}</div>
+    </div>`;
+}
+
+function renderGovernancePage() {
+  const dynPage = document.getElementById("dynPage");
+
+  const policies = [
+    { title: "PII Masking", desc: "Employee first names replaced with [employee] in all generated evidence snippets before display." },
+    { title: "Prompt-Injection Scan", desc: "Self-review text scanned for instruction-override patterns before inclusion in any scoring or drafting." },
+    { title: "Manager Approval Required", desc: "No compensation, promotion, or termination decision is finalized without explicit human sign-off." },
+    { title: "Evidence-Only Summaries", desc: "Every generated claim is grounded in goals, outcomes, peer notes, or manager-entered evidence." },
+    { title: "Audit Trail", desc: "All profile views and agent runs are logged with timestamped events viewable by HR." },
+    { title: "Protected-Class Exclusion", desc: "Age, medical, gender, family, salary, and protected-class fields are excluded from all scoring." }
+  ];
+
+  const riskRows = employees.map((emp) => {
+    const score = performanceScore(emp);
+    const injection = hasPromptInjection(emp);
+    const riskLevel = emp.risk > 60 ? "high" : emp.risk > 35 ? "medium" : "low";
+    return `<tr>
+      <td><strong>${escapeHtml(emp.name)}</strong></td>
+      <td><span class="table-muted">${escapeHtml(emp.department)}</span></td>
+      <td><strong>${score}</strong></td>
+      <td><span class="risk-pill ${riskLevel}">${emp.risk}</span></td>
+      <td>${injection ? '<span class="risk-pill high">detected</span>' : '<span class="risk-pill low">clean</span>'}</td>
+      <td><span class="table-muted">${escapeHtml(emp.tenure)}</span></td>
+    </tr>`;
+  }).join("");
+
+  const auditEntries = state.audit.length === 0
+    ? `<p class="empty-text">No events yet — run an analysis to generate audit entries.</p>`
+    : state.audit.map((entry) => `<div class="audit-entry">${escapeHtml(entry)}</div>`).join("");
+
+  dynPage.innerHTML = `
+    <div class="dyn-page">
+      <header class="dyn-topbar">
+        <span class="eyebrow">Security & Compliance</span>
+        <h1>Governance</h1>
+        <p>Active controls, risk matrix, and full session audit log.</p>
+      </header>
+
+      <div class="gov-grid">
+        ${policies.map((p) => `
+          <article class="gov-card">
+            <div class="gov-card-top">
+              <strong>${escapeHtml(p.title)}</strong>
+              <span class="status-pill">Active</span>
+            </div>
+            <p>${escapeHtml(p.desc)}</p>
+          </article>`).join("")}
+      </div>
+
+      <div class="panel risk-table-wrap">
+        <div class="panel-header">
+          <div><span class="eyebrow">Risk Matrix</span><h2>All employees</h2></div>
+        </div>
+        <div class="table-scroll">
+          <table class="risk-table">
+            <thead><tr><th>Employee</th><th>Department</th><th>Score</th><th>Risk</th><th>Injection</th><th>Tenure</th></tr></thead>
+            <tbody>${riskRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel audit-full-wrap">
+        <div class="panel-header">
+          <div><span class="eyebrow">Audit Log</span><h2>Session events</h2></div>
+        </div>
+        <div class="audit-full">${auditEntries}</div>
+      </div>
+    </div>`;
+}
+
+function renderPresentationPage() {
+  const dynPage = document.getElementById("dynPage");
+  const totalRuns = Object.keys(state.analyses).length;
+
+  dynPage.innerHTML = `
+    <div class="dyn-page pres-page">
+      <header class="pres-header">
+        <span class="eyebrow">Judge Presentation</span>
+        <h1>MeritLens AI</h1>
+        <p class="pres-tagline">Performance reviews shouldn't run on manager memory. MeritLens makes every review evidence-backed, bias-checked, and human-approved — at enterprise scale.</p>
+      </header>
+
+      <div class="pres-stats">
+        <div class="pres-stat"><strong>62%</strong><span>Review prep time saved</span></div>
+        <div class="pres-stat"><strong>5</strong><span>Agents per analysis</span></div>
+        <div class="pres-stat"><strong>100%</strong><span>Audit coverage</span></div>
+        <div class="pres-stat lime"><strong>${totalRuns}</strong><span>Runs this session</span></div>
+      </div>
+
+      <div class="pres-pitch">
+        <article class="pitch-card">
+          <span class="eyebrow">The Problem</span>
+          <h2>Reviews are broken</h2>
+          <ul>
+            <li>Manager memory replaces actual evidence</li>
+            <li>Inconsistent ratings across teams</li>
+            <li>No audit trail for HR or legal</li>
+            <li>Recency bias dominates yearly reviews</li>
+          </ul>
+        </article>
+        <article class="pitch-card lime">
+          <span class="eyebrow">The Solution</span>
+          <h2>Evidence-first AI</h2>
+          <ul>
+            <li>Ingest signals from Jira, GitHub, Salesforce, Slack</li>
+            <li>Link every claim to a measurable outcome</li>
+            <li>Detect bias, fairness gaps, security threats</li>
+            <li>Draft review — manager always approves final</li>
+          </ul>
+        </article>
+        <article class="pitch-card">
+          <span class="eyebrow">The Demo Moment</span>
+          <h2>Try Omar Williams</h2>
+          <ul>
+            <li>Self-review contains a prompt injection attempt</li>
+            <li>Security Agent quarantines it automatically</li>
+            <li>Score calculated from verified signals only</li>
+            <li>Full audit event logged immediately</li>
+          </ul>
+          <button class="primary-button" style="margin-top:18px" onclick="(() => { showPage('command-center'); setTimeout(() => { const omar = Array.from(document.querySelectorAll('.employee-card')).find(c => c.textContent.includes('Omar')); if (omar) omar.click(); }, 80); })()">Open Omar's Profile →</button>
+        </article>
+      </div>
+
+      <div class="panel pres-pipeline">
+        <div class="panel-header">
+          <div><span class="eyebrow">Agentic Workflow</span><h2>Five agents, one pipeline</h2></div>
+        </div>
+        <div class="pres-agents">
+          ${[
+            ["Ingestion", "Normalizes goals, CRM, commits, tickets, and peer notes into a unified signal set."],
+            ["Evidence", "Links every claim to a measurable outcome and a verified source snippet."],
+            ["Fairness", "Checks for bias language, protected-class leakage, and inconsistent rating bands."],
+            ["Security", "Masks PII, detects prompt injection, and records tamper-evident audit events."],
+            ["Review", "Drafts calibrated manager feedback and a next-quarter growth plan for sign-off."]
+          ].map(([name, desc], i) => `
+            <div class="pres-agent">
+              <span class="pres-agent-num">${i + 1}</span>
+              <div><strong>${escapeHtml(name)} Agent</strong><p>${escapeHtml(desc)}</p></div>
+            </div>`).join("")}
+        </div>
+      </div>
+    </div>`;
+}
+
 function bindEvents() {
+  document.querySelectorAll(".nav-item[data-page]").forEach((item) => {
+    item.addEventListener("click", () => showPage(item.dataset.page));
+  });
   $("#departmentFilter").addEventListener("change", renderEmployees);
   $("#runBtn").addEventListener("click", runAnalysis);
   $("#resetBtn").addEventListener("click", () => {
