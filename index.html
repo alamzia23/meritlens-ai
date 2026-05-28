@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MeritLens | Enterprise Performance Intelligence</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <div class="brand">
+          <div class="brand-mark">ML</div>
+          <div>
+            <strong>MeritLens</strong>
+            <span>Performance Intelligence</span>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-item active" type="button">Command Center</button>
+          <button class="nav-item" type="button">Agent Runs</button>
+          <button class="nav-item" type="button">Governance</button>
+          <button class="nav-item" type="button">Presentation</button>
+        </nav>
+
+        <section class="side-panel">
+          <span class="eyebrow">Hackathon Proof</span>
+          <p>
+            Built as a secure human-in-the-loop MVP for enterprise performance
+            evaluation, not an automated firing machine.
+          </p>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">Enterprise HR Copilot</span>
+            <h1>Agentic employee performance analysis</h1>
+            <p>
+              Converts fragmented signals into evidence-backed review drafts,
+              manager coaching, risk flags, and audit-ready decisions.
+            </p>
+          </div>
+          <div class="top-actions">
+            <button class="icon-button" id="resetBtn" type="button" aria-label="Reset demo" title="Reset demo">
+              <span aria-hidden="true">↺</span>
+            </button>
+            <button class="primary-button" id="runBtn" type="button">
+              <span aria-hidden="true">▶</span>
+              Run Agent Analysis
+            </button>
+          </div>
+        </header>
+
+        <section class="metrics" aria-label="Portfolio metrics">
+          <article>
+            <span>Employees Analyzed</span>
+            <strong id="metricEmployees">4</strong>
+          </article>
+          <article>
+            <span>Manual Review Time Saved</span>
+            <strong>62%</strong>
+          </article>
+          <article>
+            <span>High-Risk Findings</span>
+            <strong id="metricRisks">0</strong>
+          </article>
+          <article>
+            <span>Audit Coverage</span>
+            <strong>100%</strong>
+          </article>
+        </section>
+
+        <section class="main-grid">
+          <div class="panel employee-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Dataset</span>
+                <h2>Enterprise talent queue</h2>
+              </div>
+              <select id="departmentFilter" aria-label="Filter by department">
+                <option value="all">All departments</option>
+                <option value="Platform">Platform</option>
+                <option value="Sales">Sales</option>
+                <option value="Operations">Operations</option>
+              </select>
+            </div>
+            <div id="employeeList" class="employee-list"></div>
+          </div>
+
+          <div class="panel analysis-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Selected Employee</span>
+                <h2 id="employeeName">Choose a profile</h2>
+              </div>
+              <span class="status-pill" id="securityPill">Ready</span>
+            </div>
+
+            <div class="profile-strip">
+              <div>
+                <span>Role</span>
+                <strong id="employeeRole">-</strong>
+              </div>
+              <div>
+                <span>Manager</span>
+                <strong id="employeeManager">-</strong>
+              </div>
+              <div>
+                <span>Tenure</span>
+                <strong id="employeeTenure">-</strong>
+              </div>
+            </div>
+
+            <div class="score-row">
+              <div class="score-card">
+                <span>Performance Index</span>
+                <strong id="scoreValue">--</strong>
+                <div class="bar"><span id="scoreBar"></span></div>
+              </div>
+              <div class="score-card">
+                <span>Promotion Readiness</span>
+                <strong id="readinessValue">--</strong>
+                <div class="bar"><span id="readinessBar"></span></div>
+              </div>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="Analysis tabs">
+              <button class="tab active" data-tab="evidence" type="button">Evidence</button>
+              <button class="tab" data-tab="draft" type="button">Review Draft</button>
+              <button class="tab" data-tab="coaching" type="button">Coaching</button>
+              <button class="tab" data-tab="security" type="button">Security</button>
+            </div>
+
+            <section id="tabContent" class="tab-content" aria-live="polite"></section>
+          </div>
+
+          <div class="panel workflow-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Agentic Workflow</span>
+                <h2>Human-approved automation</h2>
+              </div>
+            </div>
+            <ol class="agent-steps" id="agentSteps">
+              <li data-step="0"><span>1</span><div><strong>Ingestion Agent</strong><p>Normalizes goals, CRM signals, commits, tickets, and peer notes.</p></div></li>
+              <li data-step="1"><span>2</span><div><strong>Evidence Agent</strong><p>Links claims to measurable outcomes and source snippets.</p></div></li>
+              <li data-step="2"><span>3</span><div><strong>Fairness Agent</strong><p>Checks bias words, protected-class leakage, and inconsistent ratings.</p></div></li>
+              <li data-step="3"><span>4</span><div><strong>Security Agent</strong><p>Masks PII, detects prompt injection, and records audit events.</p></div></li>
+              <li data-step="4"><span>5</span><div><strong>Review Agent</strong><p>Drafts calibrated manager feedback and next-quarter growth plan.</p></div></li>
+            </ol>
+          </div>
+
+          <div class="panel governance-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Governance</span>
+                <h2>Controls that judges can see</h2>
+              </div>
+            </div>
+            <div class="control-grid">
+              <label><input type="checkbox" checked disabled /> PII masking</label>
+              <label><input type="checkbox" checked disabled /> Prompt-injection scan</label>
+              <label><input type="checkbox" checked disabled /> Manager approval required</label>
+              <label><input type="checkbox" checked disabled /> Evidence-only summaries</label>
+            </div>
+            <div class="audit-log" id="auditLog" aria-label="Audit log"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
