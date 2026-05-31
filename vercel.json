@@ -1,6 +1,10 @@
 {
-    "outputDirectory": "public",
-    "rewrites": [
-          { "source": "/(.*)", "destination": "/index.html" }
-    ]
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/api/analyze/:id", "destination": "/api/analyze.js?id=:id" },
+    { "source": "/api/analyze", "destination": "/api/analyze.js" },
+    { "source": "/api/employees", "destination": "/api/analyze.js" },
+    { "source": "/api/health", "destination": "/api/analyze.js" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
