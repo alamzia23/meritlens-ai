@@ -11,6 +11,7 @@
     { "src": "/api/analyze", "dest": "/api/analyze.js" },
     { "src": "/api/employees", "dest": "/api/analyze.js" },
     { "src": "/api/health", "dest": "/api/analyze.js" },
+    { "src": "/(.+\\.(js|css|png|jpg|jpeg|svg|ico|woff|woff2|ttf))", "dest": "/public/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
