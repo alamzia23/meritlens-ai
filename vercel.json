@@ -6,12 +6,11 @@
       "maxDuration": 10
     }
   },
-  "routes": [
-    { "src": "/api/analyze/(?<id>[^/]+)", "dest": "/api/analyze.js?id=$id" },
-    { "src": "/api/analyze", "dest": "/api/analyze.js" },
-    { "src": "/api/employees", "dest": "/api/analyze.js" },
-    { "src": "/api/health", "dest": "/api/analyze.js" },
-    { "src": "/(.+\\.(js|css|png|jpg|jpeg|svg|ico|woff|woff2|ttf))", "dest": "/public/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/api/analyze/:id", "destination": "/api/analyze.js?id=:id" },
+    { "source": "/api/analyze", "destination": "/api/analyze.js" },
+    { "source": "/api/employees", "destination": "/api/analyze.js" },
+    { "source": "/api/health", "destination": "/api/analyze.js" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
